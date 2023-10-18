@@ -99,8 +99,7 @@ class BaseClientMixin:
         super().__init__(*args, **kwargs)
 
     def set_proxy_if_exists(self):
-        proxy = os.environ.get("IG_PROXY", "")
-        if proxy:
+        if proxy := os.environ.get("IG_PROXY", ""):
             self.cl.set_proxy(proxy)  # "socks5://127.0.0.1:30235"
         return True
 
@@ -149,7 +148,7 @@ class ClientPrivateTestCase(BaseClientMixin, unittest.TestCase):
             print(
                 "JSONDecodeError when read stored client settings. Use empty settings"
             )
-            print(str(e))
+            print(e)
         self.cl.set_settings(settings)
         # self.cl.set_locale('ru_RU')
         # self.cl.set_timezone_offset(10800)
@@ -514,7 +513,7 @@ class ClientMediaTestCase(ClientPrivateTestCase):
             self.assertIsInstance(media, Media)
             self.assertEqual(media.caption_text, msg)
             # Change caption
-            msg = "New caption %s" % random.randint(1, 100)
+            msg = f"New caption {random.randint(1, 100)}"
             self.cl.media_edit(media.pk, msg)
             media = self.cl.media_info(media.pk)
             self.assertIsInstance(media, Media)
@@ -533,23 +532,23 @@ class ClientMediaTestCase(ClientPrivateTestCase):
             media = self.cl.igtv_upload(path, "Test title", "Test caption for IGTV")
             self.assertIsInstance(media, Media)
             # Enter title
-            title = "Title %s" % random.randint(1, 100)
-            msg = "New caption %s" % random.randint(1, 100)
+            title = f"Title {random.randint(1, 100)}"
+            msg = f"New caption {random.randint(1, 100)}"
             self.cl.media_edit(media.pk, msg, title)
             media = self.cl.media_info(media.pk)
             self.assertIsInstance(media, Media)
             self.assertEqual(media.title, title)
             self.assertEqual(media.caption_text, msg)
             # Split caption to title and caption
-            title = "Title %s" % random.randint(1, 100)
-            msg = "New caption %s" % random.randint(1, 100)
+            title = f"Title {random.randint(1, 100)}"
+            msg = f"New caption {random.randint(1, 100)}"
             self.cl.media_edit(media.pk, f"{title}\n{msg}")
             media = self.cl.media_info(media.pk)
             self.assertIsInstance(media, Media)
             self.assertEqual(media.title, title)
             self.assertEqual(media.caption_text, msg)
             # Empty title (duplicate one-line caption)
-            msg = "New caption %s" % random.randint(1, 100)
+            msg = f"New caption {random.randint(1, 100)}"
             self.cl.media_edit(media.pk, msg, "")
             media = self.cl.media_info(media.pk)
             self.assertIsInstance(media, Media)
@@ -641,7 +640,7 @@ class ClientCommentTestCase(ClientPrivateTestCase):
             self.assertIn(field, user_fields)
 
     def test_media_comment(self):
-        text = "Test text [%s]" % datetime.now().strftime("%s")
+        text = f'Test text [{datetime.now().strftime("%s")}]'
         now = datetime.now(tz=UTC())
         comment = self.cl.media_comment(2276404890775267248, text)
         self.assertIsInstance(comment, Comment)

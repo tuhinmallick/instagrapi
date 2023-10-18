@@ -30,8 +30,7 @@ class ChallengeChoice(Enum):
 def extract_messages(challenge):
     messages = []
     for item in challenge["extraData"].get("content"):
-        message = item.get("title", item.get("text"))
-        if message:
+        if message := item.get("title", item.get("text")):
             dot = "" if message.endswith(".") else "."
             messages.append(f"{message}{dot}")
     return messages
@@ -109,17 +108,15 @@ class ChallengeResolveMixin:
             A boolean value
         """
         result = self.last_json
-        challenge_url = "https://i.instagram.com%s" % challenge_url
-        enc_password = "#PWD_INSTAGRAM_BROWSER:0:%s:" % str(int(time.time()))
+        challenge_url = f"https://i.instagram.com{challenge_url}"
+        enc_password = f"#PWD_INSTAGRAM_BROWSER:0:{int(time.time())}:"
         instagram_ajax = hashlib.sha256(enc_password.encode()).hexdigest()[:12]
         session = requests.Session()
-        session.verify = False  # fix SSLError/HTTPSConnectionPool
         session.proxies = self.private.proxies
+        session.verify = False
         session.headers.update(
             {
-                "User-Agent": "Mozilla/5.0 (Linux; Android 8.0.0; MI 5s Build/OPR1.170623.032; wv) "
-                "AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/80.0.3987.149 "
-                "Mobile Safari/537.36 %s" % self.user_agent,
+                "User-Agent": f"Mozilla/5.0 (Linux; Android 8.0.0; MI 5s Build/OPR1.170623.032; wv) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/80.0.3987.149 Mobile Safari/537.36 {self.user_agent}",
                 "upgrade-insecure-requests": "1",
                 "sec-fetch-dest": "document",
                 "accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.9",
@@ -157,7 +154,7 @@ class ChallengeResolveMixin:
         choice = ChallengeChoice.EMAIL
         result = session.post(challenge_url, {"choice": choice})
         result = result.json()
-        for retry in range(8):
+        for _ in range(8):
             time.sleep(WAIT_SECONDS)
             try:
                 # FORM TO ENTER CODE
@@ -187,7 +184,7 @@ class ChallengeResolveMixin:
             "VerifySMSCodeForm",
             "VerifySMSCodeFormForSMSCaptcha",
         ), result
-        for retry_code in range(5):
+        for _ in range(5):
             for attempt in range(1, 11):
                 code = self.challenge_code_handler(self.username, choice)
                 if code:
@@ -218,10 +215,10 @@ class ChallengeResolveMixin:
         for detail in [self.username, self.email, self.phone_number]:
             assert (
                 not detail or detail in details
-            ), 'ChallengeResolve: Data invalid: "%s" not in %s' % (detail, details)
+            ), f'ChallengeResolve: Data invalid: "{detail}" not in {details}'
         time.sleep(WAIT_SECONDS)
         result = session.post(
-            "https://i.instagram.com%s" % result.get("navigation").get("forward"),
+            f'https://i.instagram.com{result.get("navigation").get("forward")}',
             {
                 "choice": 0,  # I AGREE
                 "enc_new_password1": enc_password,
@@ -364,7 +361,7 @@ class ChallengeResolveMixin:
             A boolean value
         """
         step_name = self.last_json.get("step_name", "")
-        if step_name == "delta_login_review" or step_name == "scraping_warning":
+        if step_name in ["delta_login_review", "scraping_warning"]:
             # IT WAS ME (by GEO)
             self._send_private_request(challenge_url, {"choice": "0"})
             return True

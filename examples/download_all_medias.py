@@ -10,7 +10,7 @@ def main(username: str, amount: int = 5) -> dict:
     """
     Download all medias from instagram profile
     """
-    amount = int(amount)
+    amount = amount
     cl = Client()
     cl.login(ACCOUNT_USERNAME, ACCOUNT_PASSWORD)
     user_id = cl.user_id_from_username(username)
@@ -35,8 +35,7 @@ def main(username: str, amount: int = 5) -> dict:
             paths.append(cl.video_download(m.pk))
         elif m.media_type == 8:
             # Album
-            for path in cl.album_download(m.pk):
-                paths.append(path)
+            paths.extend(iter(cl.album_download(m.pk)))
         result[m.pk] = paths
         print(f"http://instagram.com/p/{m.code}/", paths)
         i += 1

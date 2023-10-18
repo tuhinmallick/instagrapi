@@ -64,12 +64,12 @@ class ReelsMixin:
             A list of objects of Media
         """
 
-        if collection_pk == "reels":
-            private_request_endpoint = "clips/connected/"
-        elif collection_pk == "explore_reels":
+        if collection_pk == "explore_reels":
             private_request_endpoint = "clips/discover/"
 
-        last_media_pk = last_media_pk and int(last_media_pk)
+        elif collection_pk == "reels":
+            private_request_endpoint = "clips/connected/"
+        last_media_pk = last_media_pk and last_media_pk
         total_items = []
         next_max_id = ""
         while True:

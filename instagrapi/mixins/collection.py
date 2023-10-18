@@ -33,8 +33,7 @@ class CollectionMixin:
             except Exception as e:
                 self.logger.exception(e)
                 return total_items
-            for item in result["items"]:
-                total_items.append(extract_collection(item))
+            total_items.extend(extract_collection(item) for item in result["items"])
             if not result.get("more_available"):
                 return total_items
             next_max_id = result.get("next_max_id", "")
@@ -145,10 +144,10 @@ class CollectionMixin:
         List[Media]
             A list of objects of Media
         """
-        last_media_pk = last_media_pk and int(last_media_pk)
+        last_media_pk = last_media_pk and last_media_pk
         total_items = []
         next_max_id = ""
-        amount = int(amount)
+        amount = amount
         found_last_media_pk = False
         while True:
             items, next_max_id = self.collection_medias_v1_chunk(
@@ -216,7 +215,7 @@ class CollectionMixin:
             "radio_type": "wifi-none",
         }
         if collection_pk:
-            data["added_collection_ids"] = f"[{int(collection_pk)}]"
+            data["added_collection_ids"] = f"[{collection_pk}]"
         name = "unsave" if revert else "save"
         result = self.private_request(
             f"media/{media_id}/{name}/", self.with_action_data(data)

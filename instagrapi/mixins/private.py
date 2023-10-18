@@ -210,9 +210,9 @@ class PrivateRequestMixin:
                 }
             )
         if self.ig_u_rur:
-            headers.update({"IG-U-RUR": self.ig_u_rur})
+            headers["IG-U-RUR"] = self.ig_u_rur
         if self.ig_www_claim:
-            headers.update({"X-IG-WWW-Claim": self.ig_www_claim})
+            headers["X-IG-WWW-Claim"] = self.ig_www_claim
         return headers
 
     def set_country(self, country: str = "US"):
@@ -229,7 +229,7 @@ class PrivateRequestMixin:
         bool
             A boolean value
         """
-        self.settings["country"] = self.country = str(country)
+        self.settings["country"] = self.country = country
         return True
 
     def set_country_code(self, country_code: int = 1):
@@ -244,7 +244,7 @@ class PrivateRequestMixin:
         bool
             A boolean value
         """
-        self.settings["country_code"] = self.country_code = int(country_code)
+        self.settings["country_code"] = self.country_code = country_code
         return True
 
     def set_locale(self, locale: str = "en_US"):
@@ -264,7 +264,7 @@ class PrivateRequestMixin:
         user_agent = (self.settings.get("user_agent") or "").replace(
             self.locale, locale
         )
-        self.settings["locale"] = self.locale = str(locale)
+        self.settings["locale"] = self.locale = locale
         self.set_user_agent(user_agent)  # update locale in user_agent
         if "_" in locale:
             self.set_country(locale.rsplit("_", 1)[1])
@@ -283,7 +283,7 @@ class PrivateRequestMixin:
         bool
             A boolean value
         """
-        self.settings["timezone_offset"] = self.timezone_offset = int(seconds)
+        self.settings["timezone_offset"] = self.timezone_offset = seconds
         return True
 
     def set_ig_u_rur(self, value):
@@ -352,8 +352,7 @@ class PrivateRequestMixin:
                 response.url,
                 response.text,
             )
-            mid = response.headers.get("ig-set-x-mid")
-            if mid:
+            if mid := response.headers.get("ig-set-x-mid"):
                 self.mid = mid
             self.request_log(response)
             self.last_response = response
@@ -395,8 +394,7 @@ class PrivateRequestMixin:
                     raise FeedbackRequired(
                         **dict(
                             last_json,
-                            message="%s: %s"
-                            % (message, last_json.get("feedback_message")),
+                            message=f'{message}: {last_json.get("feedback_message")}',
                         )
                     )
                 elif error_type == "sentry_block":
@@ -407,8 +405,8 @@ class PrivateRequestMixin:
                     msg = last_json.get("message", "").strip()
                     if msg:
                         if not msg.endswith("."):
-                            msg = "%s." % msg
-                        msg = "%s " % msg
+                            msg = f"{msg}."
+                        msg = f"{msg} "
                     last_json["message"] = (
                         "%sIf you are sure that the password is correct, then change your IP address, "
                         "because it is added to the blacklist of the Instagram Server"

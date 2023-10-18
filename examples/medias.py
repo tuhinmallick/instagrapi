@@ -82,9 +82,7 @@ def get_medias(
     ht_medias = []
     for hashtag in hashtags:
         if ht_type == "top":
-            ht_medias.extend(
-                cl.hashtag_medias_top(name=hashtag, amount=amount if amount <= 9 else 9)
-            )
+            ht_medias.extend(cl.hashtag_medias_top(name=hashtag, amount=min(amount, 9)))
         elif ht_type == "recent":
             ht_medias.extend(cl.hashtag_medias_recent(name=hashtag, amount=amount))
     return list(dict([(media.pk, media) for media in ht_medias]).values())

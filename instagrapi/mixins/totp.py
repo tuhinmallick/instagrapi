@@ -46,7 +46,7 @@ class TOTP:
         )
         str_code = str(code % 10**self.digits)
         while len(str_code) < self.digits:
-            str_code = "0" + str_code
+            str_code = f"0{str_code}"
         return str_code
 
     def byte_secret(self) -> bytes:

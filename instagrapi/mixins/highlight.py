@@ -51,7 +51,7 @@ class HighlightMixin:
         List[Highlight]
             A list of objects of Highlight
         """
-        amount = int(amount)
+        amount = amount
         user_id = int(user_id)
         params = {
             "supported_capabilities_new": json.dumps(config.SUPPORTED_CAPABILITIES),

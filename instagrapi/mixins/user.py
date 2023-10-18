@@ -46,7 +46,7 @@ class UserMixin:
         -------
         'example' -> 1903424587
         """
-        username = str(username).lower()
+        username = username.lower()
         return str(self.user_info_by_username(username).pk)
 
     def user_short_gql(self, user_id: str, use_cache: bool = True) -> UserShort:
@@ -66,13 +66,9 @@ class UserMixin:
             An object of UserShort type
         """
         if use_cache:
-            cache = self._userhorts_cache.get(user_id)
-            if cache:
+            if cache := self._userhorts_cache.get(user_id):
                 return cache
-        variables = {
-            "user_id": str(user_id),
-            "include_reel": True,
-        }
+        variables = {"user_id": user_id, "include_reel": True}
         data = self.public_graphql_request(
             variables, query_hash="ad99dd9d3646cc3c0dda65debcd266a7"
         )
@@ -120,7 +116,7 @@ class UserMixin:
         -------
         1903424587 -> 'example'
         """
-        user_id = str(user_id)
+        user_id = user_id
         try:
             username = self.username_from_user_id_gql(user_id)
         except ClientError:
@@ -141,7 +137,7 @@ class UserMixin:
         User
             An object of User type
         """
-        username = str(username).lower()
+        username = username.lower()
         return extract_user_gql(self.public_a1_request(f"/{username!s}/")["user"])
 
     def user_info_by_username_v1(self, username: str) -> User:
@@ -158,7 +154,7 @@ class UserMixin:
         User
             An object of User type
         """
-        username = str(username).lower()
+        username = username.lower()
         try:
             result = self.private_request(f"users/{username}/usernameinfo/")
         except ClientNotFoundError as e:
@@ -185,7 +181,7 @@ class UserMixin:
         User
             An object of User type
         """
-        username = str(username).lower()
+        username = username.lower()
         if not use_cache or username not in self._usernames_cache:
             try:
                 try:
@@ -216,7 +212,7 @@ class UserMixin:
         User
             An object of User type
         """
-        user_id = str(user_id)
+        user_id = user_id
         try:
             # GraphQL haven't method to receive user by id
             return self.user_info_by_username_gql(
@@ -239,7 +235,7 @@ class UserMixin:
         User
             An object of User type
         """
-        user_id = str(user_id)
+        user_id = user_id
         try:
             result = self.private_request(f"users/{user_id}/info/")
         except ClientNotFoundError as e:
@@ -266,7 +262,7 @@ class UserMixin:
         User
             An object of User type
         """
-        user_id = str(user_id)
+        user_id = user_id
         if not use_cache or user_id not in self._users_cache:
             try:
                 try:
@@ -319,11 +315,10 @@ class UserMixin:
         )
         assert result.get("status", "") == "ok"
 
-        relationships = []
-        for user_id, status in result.get("friendship_statuses", {}).items():
-            relationships.append(RelationshipShort(user_id=user_id, **status))
-
-        return relationships
+        return [
+            RelationshipShort(user_id=user_id, **status)
+            for user_id, status in result.get("friendship_statuses", {}).items()
+        ]
 
     def user_friendship_v1(self, user_id: str) -> Relationship:
         """
@@ -493,7 +488,7 @@ class UserMixin:
         List[UserShort]
             List of objects of User type
         """
-        user_id = str(user_id)
+        user_id = user_id
         end_cursor = None
         users = []
         variables = {
@@ -513,14 +508,13 @@ class UserMixin:
                 raise UserNotFound(user_id=user_id, **data)
             page_info = json_value(data, "user", "edge_follow", "page_info", default={})
             edges = json_value(data, "user", "edge_follow", "edges", default=[])
-            for edge in edges:
-                users.append(extract_user_short(edge["node"]))
+            users.extend(extract_user_short(edge["node"]) for edge in edges)
             end_cursor = page_info.get("end_cursor")
             if not page_info.get("has_next_page") or not end_cursor:
                 break
             if amount and len(users) >= amount:
                 break
-            # time.sleep(sleep)
+                # time.sleep(sleep)
         if amount:
             users = users[:amount]
         return users
@@ -586,7 +580,7 @@ class UserMixin:
         List[UserShort]
             List of objects of User type
         """
-        users, _ = self.user_following_v1_chunk(str(user_id), amount)
+        users, _ = self.user_following_v1_chunk(user_id, amount)
         if amount:
             users = users[:amount]
         return users
@@ -611,7 +605,7 @@ class UserMixin:
         Dict[str, UserShort]
             Dict of user_id and User object
         """
-        user_id = str(user_id)
+        user_id = user_id
         users = self._users_following.get(user_id, {})
         if not use_cache or not users or (amount and len(users) < amount):
             # Temporary: Instagram Required Login for GQL request
@@ -649,7 +643,7 @@ class UserMixin:
         Tuple[List[UserShort], str]
             List of objects of User type with cursor
         """
-        user_id = str(user_id)
+        user_id = user_id
         users = []
         variables = {
             "id": user_id,
@@ -670,8 +664,7 @@ class UserMixin:
                 data, "user", "edge_followed_by", "page_info", default={}
             )
             edges = json_value(data, "user", "edge_followed_by", "edges", default=[])
-            for edge in edges:
-                users.append(extract_user_short(edge["node"]))
+            users.extend(extract_user_short(edge["node"]) for edge in edges)
             end_cursor = page_info.get("end_cursor")
             if not page_info.get("has_next_page") or not end_cursor:
                 break
@@ -695,7 +688,7 @@ class UserMixin:
         List[UserShort]
             List of objects of User type
         """
-        users, _ = self.user_followers_gql_chunk(str(user_id), amount)
+        users, _ = self.user_followers_gql_chunk(user_id, amount)
         if amount:
             users = users[:amount]
         return users
@@ -761,7 +754,7 @@ class UserMixin:
         List[UserShort]
             List of objects of User type
         """
-        users, _ = self.user_followers_v1_chunk(str(user_id), amount)
+        users, _ = self.user_followers_v1_chunk(user_id, amount)
         if amount:
             users = users[:amount]
         return users
@@ -786,7 +779,7 @@ class UserMixin:
         Dict[str, UserShort]
             Dict of user_id and User object
         """
-        user_id = str(user_id)
+        user_id = user_id
         users = self._users_followers.get(user_id, {})
         if not use_cache or not users or (amount and len(users) < amount):
             try:
@@ -815,7 +808,7 @@ class UserMixin:
             A boolean value
         """
         assert self.user_id, "Login required"
-        user_id = str(user_id)
+        user_id = user_id
         if user_id in self._users_following.get(self.user_id, []):
             self.logger.debug("User %s already followed", user_id)
             return False
@@ -839,7 +832,7 @@ class UserMixin:
             A boolean value
         """
         assert self.user_id, "Login required"
-        user_id = str(user_id)
+        user_id = user_id
         data = self.with_action_data({"user_id": user_id})
         result = self.private_request(f"friendships/destroy/{user_id}/", data)
         if self.user_id in self._users_following:
@@ -921,8 +914,8 @@ class UserMixin:
             A boolean value
         """
         assert self.user_id, "Login required"
-        user_id = str(user_id)
-        data = self.with_action_data({"user_id": str(user_id)})
+        user_id = user_id
+        data = self.with_action_data({"user_id": user_id})
         result = self.private_request(f"friendships/remove_follower/{user_id}/", data)
         if self.user_id in self._users_followers:
             self._users_followers[self.user_id].pop(user_id, None)
@@ -944,14 +937,13 @@ class UserMixin:
         bool
             A boolean value
         """
-        user_id = str(user_id)
+        user_id = user_id
         name = "unmute" if revert else "mute"
         result = self.private_request(
             f"friendships/{name}_posts_or_story_from_follow/",
             {
-                # "media_id": media_pk,  # when feed_timeline
-                "target_posts_author_id": str(user_id),
-                "container_module": "media_mute_sheet",  # or "feed_timeline"
+                "target_posts_author_id": user_id,
+                "container_module": "media_mute_sheet",
             },
         )
         return result["status"] == "ok"
@@ -988,14 +980,13 @@ class UserMixin:
         bool
             A boolean value
         """
-        user_id = str(user_id)
+        user_id = user_id
         name = "unmute" if revert else "mute"
         result = self.private_request(
             f"friendships/{name}_posts_or_story_from_follow/",
             {
-                # "media_id": media_pk,  # when feed_timeline
-                "target_reel_author_id": str(user_id),
-                "container_module": "media_mute_sheet",  # or "feed_timeline"
+                "target_reel_author_id": user_id,
+                "container_module": "media_mute_sheet",
             },
         )
         return result["status"] == "ok"
@@ -1033,7 +1024,7 @@ class UserMixin:
             A boolean value
         """
         assert self.user_id, "Login required"
-        user_id = str(user_id)
+        user_id = user_id
         data = self.with_action_data({"user_id": user_id, "_uid": self.user_id})
         name = "unfavorite" if disable else "favorite"
         result = self.private_request(f"friendships/{name}/{user_id}/", data)
@@ -1071,7 +1062,7 @@ class UserMixin:
         A boolean value
         """
         assert self.user_id, "Login required"
-        user_id = str(user_id)
+        user_id = user_id
         data = self.with_action_data({"user_id": user_id, "_uid": self.user_id})
         name = "unfavorite" if revert else "favorite"
         result = self.private_request(f"friendships/{name}_for_igtv/{user_id}/", data)
@@ -1109,7 +1100,7 @@ class UserMixin:
         A boolean value
         """
         assert self.user_id, "Login required"
-        user_id = str(user_id)
+        user_id = user_id
         data = self.with_action_data({"user_id": user_id, "_uid": self.user_id})
         name = "unfavorite" if revert else "favorite"
         result = self.private_request(f"friendships/{name}_for_clips/{user_id}/", data)
@@ -1147,7 +1138,7 @@ class UserMixin:
         A boolean value
         """
         assert self.user_id, "Login required"
-        user_id = str(user_id)
+        user_id = user_id
         data = self.with_action_data({"user_id": user_id, "_uid": self.user_id})
         name = "unfavorite" if revert else "favorite"
         result = self.private_request(
@@ -1184,7 +1175,7 @@ class UserMixin:
             A boolean value
         """
         assert self.user_id, "Login required"
-        user_id = str(user_id)
+        user_id = user_id
         data = {
             "block_on_empty_thread_creation": "false",
             "module": "CLOSE_FRIENDS_V2_SEARCH",
@@ -1211,7 +1202,7 @@ class UserMixin:
             A boolean value
         """
         assert self.user_id, "Login required"
-        user_id = str(user_id)
+        user_id = user_id
         data = {
             "block_on_empty_thread_creation": "false",
             "module": "CLOSE_FRIENDS_V2_SEARCH",

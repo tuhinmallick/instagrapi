@@ -147,9 +147,7 @@ class PublicRequestMixin:
             actual_length = response.raw.tell()
             if actual_length < expected_length:
                 raise ClientIncompleteReadError(
-                    "Incomplete read ({} bytes read, {} more expected)".format(
-                        actual_length, expected_length
-                    ),
+                    f"Incomplete read ({actual_length} bytes read, {expected_length} more expected)",
                     response=response,
                 )
 
@@ -200,7 +198,7 @@ class PublicRequestMixin:
             raise ClientError(e, response=e.response)
 
         except requests.ConnectionError as e:
-            raise ClientConnectionError("{} {}".format(e.__class__.__name__, str(e)))
+            raise ClientConnectionError(f"{e.__class__.__name__} {str(e)}")
         finally:
             self.last_response_ts = time.time()
 
@@ -247,9 +245,7 @@ class PublicRequestMixin:
 
             if body_json.get("status", None) != "ok":
                 raise ClientGraphqlError(
-                    "Unexpected status '{}' in response. Message: '{}'".format(
-                        body_json.get("status", None), body_json.get("message", None)
-                    ),
+                    f"""Unexpected status '{body_json.get("status", None)}' in response. Message: '{body_json.get("message", None)}'""",
                     response=body_json,
                 )
 
@@ -263,7 +259,7 @@ class PublicRequestMixin:
             except JSONDecodeError:
                 pass
             raise ClientGraphqlError(
-                "Error: '{}'. Message: '{}'".format(e, message), response=e.response
+                f"Error: '{e}'. Message: '{message}'", response=e.response
             )
 
 
@@ -277,8 +273,7 @@ class TopSearchesPublicMixin:
             "rank_token": 0.7763938004511706,
             "include_reel": "true",
         }
-        response = self.public_request(url, params=params, return_json=True)
-        return response
+        return self.public_request(url, params=params, return_json=True)
 
 
 class ProfilePublicMixin:

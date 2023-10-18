@@ -67,7 +67,7 @@ class HashtagMixin:
         Hashtag
             An object of Hashtag
         """
-        variables = {"tag_name": name, "show_ranked": False, "first": int(amount)}
+        variables = {"tag_name": name, "show_ranked": False, "first": amount}
         if end_cursor:
             variables["after"] = end_cursor
         data = self.public_graphql_request(
@@ -162,10 +162,10 @@ class HashtagMixin:
         Tuple[List[Media], str]
             List of objects of Media and end_cursor
         """
-        assert tab_key in (
+        assert tab_key in {
             "recent",
             "top",
-        ), 'You must specify one of the options for "tab_key" ("recent" or "top")'
+        }, 'You must specify one of the options for "tab_key" ("recent" or "top")'
         url = f"/explore/tags/{name}/"
         medias = []
         while True:
@@ -246,11 +246,11 @@ class HashtagMixin:
         Tuple[List[Media], str]
             List of objects of Media and max_id
         """
-        assert tab_key in (
+        assert tab_key in {
             "top",
             "recent",
             "clips",
-        ), 'You must specify one of the options for "tab_key" ("top", "recent", "clips")'
+        }, 'You must specify one of the options for "tab_key" ("top", "recent", "clips")'
         media_recency_filter = {
             "top": "default",
             "recent": "top_recent_posts",

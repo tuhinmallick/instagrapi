@@ -113,12 +113,11 @@ def extract_media_gql(data):
         media["media_type"] = 0
     if media.get("media_type") == 2 and not media.get("product_type"):
         media["product_type"] = "feed"
-    sorted_resources = sorted(
+    if sorted_resources := sorted(
         # display_resources - user feed, thumbnail_resources - hashtag feed
         media.get("display_resources", media.get("thumbnail_resources", [])),
         key=lambda o: o["config_width"] * o["config_height"],
-    )
-    if sorted_resources:
+    ):
         media["thumbnail_url"] = sorted_resources[-1]["src"]
     elif "thumbnail_src" in media:
         media["thumbnail_url"] = media["thumbnail_src"]
@@ -297,8 +296,7 @@ def extract_reply_message(data):
         data["media_share"] = extract_media_v1(ms)
     if "media" in data:
         data["media"] = extract_direct_media(data["media"])
-    clip = data.get("clip", {})
-    if clip:
+    if clip := data.get("clip", {}):
         if "clip" in clip:
             # Instagram ¯\_(ツ)_/¯
             clip = clip.get("clip")
@@ -320,14 +318,12 @@ def extract_direct_message(data):
     if "voice_media" in data:
         if "media" in data["voice_media"]:
             data["media"] = extract_direct_media(data["voice_media"]["media"])
-    clip = data.get("clip", {})
-    if clip:
+    if clip := data.get("clip", {}):
         if "clip" in clip:
             # Instagram ¯\_(ツ)_/¯
             clip = clip.get("clip")
         data["clip"] = extract_media_v1(clip)
-    xma_media_share = data.get("xma_media_share", {})
-    if xma_media_share:
+    if xma_media_share := data.get("xma_media_share", {}):
         data["xma_share"] = extract_media_v1_xma(xma_media_share[0])
 
     return DirectMessage(**data)
@@ -424,8 +420,7 @@ def extract_story_gql(data):
             item["user"] = extract_user_short(item)
             story["mentions"].append(StoryMention(**item))
         if item["__typename"] == "GraphTappableFeedMedia":
-            media = item.get("media")
-            if media:
+            if media := item.get("media"):
                 item["media_pk"] = int(media["id"])
                 item["media_code"] = media["shortcode"]
             story["medias"].append(StoryMedia(**item))
@@ -433,8 +428,7 @@ def extract_story_gql(data):
     story["hashtags"] = []
     story["stickers"] = []
     story["links"] = []
-    story_cta_url = story.get("story_cta_url", [])
-    if story_cta_url:
+    if story_cta_url := story.get("story_cta_url", []):
         story["links"] = [StoryLink(**{"webUri": story_cta_url})]
     story["user"] = extract_user_short(story.get("owner"))
     story["pk"] = int(story["id"])

@@ -49,13 +49,11 @@ class MediaMixin:
         -------
         2277033926878261772 -> 2277033926878261772_1903424587
         """
-        media_id = str(media_pk)
+        media_id = media_pk
         if "_" not in media_id:
-            assert media_id.isdigit(), (
-                "media_id must been contain digits, now %s" % media_id
-            )
+            assert media_id.isdigit(), f"media_id must been contain digits, now {media_id}"
             user = self.media_user(media_id)
-            media_id = "%s_%s" % (media_id, user.pk)
+            media_id = f"{media_id}_{user.pk}"
         return media_id
 
     @staticmethod
@@ -77,7 +75,7 @@ class MediaMixin:
         -------
         2277033926878261772_1903424587 -> 2277033926878261772
         """
-        media_pk = str(media_id)
+        media_pk = media_id
         if "_" in media_pk:
             media_pk, _ = media_id.split("_")
         return str(media_pk)
@@ -349,11 +347,10 @@ class MediaMixin:
                 "igtv_ads_toggled_on": "0",
             }
         self._medias_cache.pop(self.media_pk(media_id), None)  # clean cache
-        result = self.private_request(
+        return self.private_request(
             f"media/{media_id}/edit_media/",
             self.with_default_data(data),
         )
-        return result
 
     def media_user(self, media_pk: str) -> UserShort:
         """
@@ -455,15 +452,13 @@ class MediaMixin:
         Tuple[List[Media], str]
             A tuple containing a list of medias and the next end_cursor value
         """
-        amount = int(amount)
+        amount = amount
         user_id = int(user_id)
-        medias = []
         variables = {
             "id": user_id,
             "first": 50 if not amount or amount > 50 else amount,
-            # These are Instagram restrictions, you can only specify <= 50
+            "after": end_cursor,
         }
-        variables["after"] = end_cursor
         data = self.public_graphql_request(
             variables, query_hash="e7e2f4da4b02303f74f0841279e52d76"
         )
@@ -473,8 +468,7 @@ class MediaMixin:
         edges = json_value(
             data, "user", "edge_owner_to_timeline_media", "edges", default=[]
         )
-        for edge in edges:
-            medias.append(edge["node"])
+        medias = [edge["node"] for edge in edges]
         end_cursor = page_info.get("end_cursor")
         if amount:
             medias = medias[:amount]
@@ -499,9 +493,9 @@ class MediaMixin:
         List[Media]
             A list of objects of Media
         """
-        amount = int(amount)
+        amount = amount
         user_id = int(user_id)
-        sleep = int(sleep)
+        sleep = sleep
         medias = []
         end_cursor = None
         variables = {
@@ -550,7 +544,6 @@ class MediaMixin:
             A tuple containing a list of medias and the next end_cursor value
         """
         items = []
-        amount = int(amount)
         user_id = int(user_id)
         medias = []
         next_max_id = end_cursor
@@ -566,7 +559,7 @@ class MediaMixin:
             return [], None
         medias.extend(items)
         next_max_id = self.last_json.get("next_max_id", "")
-        if amount:
+        if amount := amount:
             medias = medias[:amount]
         return ([extract_media_v1(media) for media in medias], next_max_id)
 
@@ -585,7 +578,7 @@ class MediaMixin:
         List[Media]
             A list of objects of Media
         """
-        amount = int(amount)
+        amount = amount
         user_id = int(user_id)
         medias = []
         next_max_id = ""
@@ -627,7 +620,7 @@ class MediaMixin:
         Tuple[List[Media], str]
             A tuple containing a list of medias and the next end_cursor value
         """
-        amount = int(amount)
+        amount = amount
         user_id = int(user_id)
         medias = []
         next_max_id = end_cursor
@@ -669,7 +662,7 @@ class MediaMixin:
         List[Media]
             A list of objects of Media
         """
-        amount = int(amount)
+        amount = amount
         user_id = int(user_id)
         medias = []
         next_max_id = ""
@@ -765,10 +758,11 @@ class MediaMixin:
                 "only_fetch_first_carousel_media": "false",
             },
         )
-        pinned_medias = []
-        for media in medias["items"]:
-            if media.get("timeline_pinned_user_ids") != None:
-                pinned_medias.append(extract_media_v1(media))
+        pinned_medias = [
+            extract_media_v1(media)
+            for media in medias["items"]
+            if media.get("timeline_pinned_user_ids") != None
+        ]
         self.base_headers["X-IG-Nav-Chain"] = default_nav
         return pinned_medias
 
@@ -789,9 +783,9 @@ class MediaMixin:
         List[Media]
             A list of objects of Media
         """
-        amount = int(amount)
+        amount = amount
         user_id = int(user_id)
-        sleep = int(sleep)
+        sleep = sleep
         try:
             try:
                 medias = self.user_medias_gql(user_id, amount, sleep)
@@ -829,7 +823,7 @@ class MediaMixin:
         Tuple[List[Media], str]
             A tuple containing a list of medias and the next end_cursor value
         """
-        amount = int(amount)
+        amount = amount
         user_id = int(user_id)
         medias = []
         next_max_id = end_cursor
@@ -869,7 +863,7 @@ class MediaMixin:
         List[Media]
             A list of objects of Media
         """
-        amount = int(amount)
+        amount = amount
         user_id = int(user_id)
         medias = []
         next_max_id = ""
@@ -907,7 +901,7 @@ class MediaMixin:
         List[Media]
             A list of objects of Media
         """
-        amount = int(amount)
+        amount = amount
         user_id = int(user_id)
         return self.user_clips_v1(user_id, amount)
 
@@ -1023,7 +1017,7 @@ class MediaMixin:
         List[Media]
             A list of objects of Media
         """
-        amount = int(amount)
+        amount = amount
         user_id = int(user_id)
         medias = []
         end_cursor = None
@@ -1044,8 +1038,7 @@ class MediaMixin:
             edges = json_value(
                 data, "user", "edge_user_to_photos_of_you", "edges", default=[]
             )
-            for edge in edges:
-                medias.append(edge["node"])
+            medias.extend(edge["node"] for edge in edges)
             end_cursor = page_info.get("end_cursor")
             if not page_info.get("has_next_page") or not end_cursor or len(edges) == 0:
                 break
@@ -1071,7 +1064,7 @@ class MediaMixin:
         List[Media]
             A list of objects of Media
         """
-        amount = int(amount)
+        amount = amount
         user_id = int(user_id)
         medias = []
         next_max_id = ""
@@ -1110,7 +1103,7 @@ class MediaMixin:
         List[Media]
             A list of objects of Media
         """
-        amount = int(amount)
+        amount = amount
         user_id = int(user_id)
         try:
             medias = self.usertag_medias_gql(user_id, amount)

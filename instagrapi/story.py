@@ -144,18 +144,16 @@ class StoryBuilder:
                 .fadein(3)
             )
             link_sticker = StorySticker(
-                # x=160.0, y=641.0, z=0, width=400.0, height=88.0,
-                x=round(link_clip_left / self.width, 7),  # e.g. 0.49953705
-                y=round(link_clip_top / self.height, 7),  # e.g. 0.5
+                x=round(link_clip_left / self.width, 7),
+                y=round(link_clip_top / self.height, 7),
                 z=0,
-                width=round(link_clip.size[0] / self.width, 7),  # e.g. 0.50912
-                height=round(link_clip.size[1] / self.height, 7),  # e.g. 0.06875
+                width=round(link_clip.size[0] / self.width, 7),
+                height=round(link_clip.size[1] / self.height, 7),
                 rotation=0.0,
-                # id="link_sticker_default",
                 type="story_link",
                 extra=dict(
                     link_type="web",
-                    url=str(link),  # e.g. "https//github.com/"
+                    url=link,
                     tap_state_str_id="link_sticker_default",
                 ),
             )
@@ -186,7 +184,7 @@ class StoryBuilder:
                 path = tempfile.mktemp(".mp4")
                 start = i * 15
                 rest = duration - start
-                end = start + (rest if rest < 15 else 15)
+                end = start + min(rest, 15)
                 sub = cvc.subclip(start, end)
                 sub.write_videofile(
                     path, codec="libx264", audio=True, audio_codec="aac"

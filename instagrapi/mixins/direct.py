@@ -88,9 +88,7 @@ class DirectMixin:
             threads_chunk, cursor = self.direct_threads_chunk(
                 selected_filter, box, thread_message_limit, cursor
             )
-            for thread in threads_chunk:
-                threads.append(thread)
-
+            threads.extend(iter(threads_chunk))
             if not cursor or (amount and len(threads) >= amount):
                 break
         if amount:
@@ -136,22 +134,22 @@ class DirectMixin:
             assert (
                 selected_filter in SELECTED_FILTERS
             ), f'Unsupported selected_filter="{selected_filter}" {SELECTED_FILTERS}'
-            params.update({"selected_filter": selected_filter})
+            params["selected_filter"] = selected_filter
         if box:
             assert box in BOXES, f'Unsupported box="{box}" {BOXES}'
-            params.update({"folder": "1" if box == "general" else "0"})
+            params["folder"] = "1" if box == "general" else "0"
         if thread_message_limit:
-            params.update({"thread_message_limit": thread_message_limit})
+            params["thread_message_limit"] = thread_message_limit
         if cursor:
             params.update(
                 {"cursor": cursor, "direction": "older", "fetch_reason": "page_scroll"}
             )
 
-        threads = []
         result = self.private_request("direct_v2/inbox/", params=params)
         inbox = result.get("inbox", {})
-        for thread in inbox.get("threads", []):
-            threads.append(extract_direct_thread(thread))
+        threads = [
+            extract_direct_thread(thread) for thread in inbox.get("threads", [])
+        ]
         cursor = inbox.get("oldest_cursor")
         return threads, cursor
 
@@ -174,9 +172,7 @@ class DirectMixin:
         threads = []
         while True:
             new_threads, cursor = self.direct_pending_chunk(cursor)
-            for thread in new_threads:
-                threads.append(thread)
-
+            threads.extend(iter(new_threads))
             if not cursor or (amount and len(threads) >= amount):
                 break
         if amount:
@@ -207,13 +203,13 @@ class DirectMixin:
             "request_session_id": self.request_id,
         }
         if cursor:
-            params.update({"cursor": cursor})
+            params["cursor"] = cursor
 
-        threads = []
         result = self.private_request("direct_v2/pending_inbox/", params=params)
         inbox = result.get("inbox", {})
-        for thread in inbox.get("threads", []):
-            threads.append(extract_direct_thread(thread))
+        threads = [
+            extract_direct_thread(thread) for thread in inbox.get("threads", [])
+        ]
         cursor = inbox.get("oldest_cursor")
         return threads, cursor
 
@@ -258,9 +254,7 @@ class DirectMixin:
         threads = []
         while True:
             new_threads, cursor = self.direct_spam_chunk(cursor)
-            for thread in new_threads:
-                threads.append(thread)
-
+            threads.extend(iter(new_threads))
             if not cursor or (amount and len(threads) >= amount):
                 break
         if amount:
@@ -288,13 +282,13 @@ class DirectMixin:
             "is_prefetching": "false",
         }
         if cursor:
-            params.update({"cursor": cursor})
+            params["cursor"] = cursor
 
-        threads = []
         result = self.private_request("direct_v2/spam_inbox/", params=params)
         inbox = result.get("inbox", {})
-        for thread in inbox.get("threads", []):
-            threads.append(extract_direct_thread(thread))
+        threads = [
+            extract_direct_thread(thread) for thread in inbox.get("threads", [])
+        ]
         cursor = inbox.get("oldest_cursor")
         return threads, cursor
 
@@ -334,8 +328,7 @@ class DirectMixin:
             except ClientNotFoundError as e:
                 raise DirectThreadNotFound(e, thread_id=thread_id, **self.last_json)
             thread = result["thread"]
-            for item in thread["items"]:
-                items.append(item)
+            items.extend(iter(thread["items"]))
             cursor = thread.get("oldest_cursor")
             if not cursor or (amount and len(items) >= amount):
                 break
@@ -382,7 +375,7 @@ class DirectMixin:
             An object of DirectMessage
         """
         assert self.user_id, "Login required"
-        return self.direct_send(text, [], [int(thread_id)])
+        return self.direct_send(text, [], [thread_id])
 
     def direct_send(
         self,
@@ -414,13 +407,12 @@ class DirectMixin:
             An object of DirectMessage
         """
         assert self.user_id, "Login required"
-        assert (user_ids or thread_ids) and not (
-            user_ids and thread_ids
+        assert (user_ids or thread_ids) and (
+            not user_ids or not thread_ids
         ), "Specify user_ids or thread_ids, but not both"
         assert (
             send_attribute in SEND_ATTRIBUTES
         ), f'Unsupported send_attribute="{send_attribute}" {SEND_ATTRIBUTES}'
-        method = "text"
         token = self.generate_mutation_token()
 
         kwargs = {
@@ -441,6 +433,7 @@ class DirectMixin:
             "is_ae_dual_send": "false",
             "offline_threading_id": token,
         }
+        method = "text"
         if "http" in text:
             method = "link"
             kwargs["link_text"] = text
@@ -527,10 +520,9 @@ class DirectMixin:
             An object of DirectMessage
         """
         assert self.user_id, "Login required"
-        assert (user_ids or thread_ids) and not (
-            user_ids and thread_ids
+        assert (user_ids or thread_ids) and (
+            not user_ids or not thread_ids
         ), "Specify user_ids or thread_ids, but not both"
-        method = f"configure_{content_type}"
         token = self.generate_mutation_token()
         nav_chains = [
             (
@@ -556,12 +548,12 @@ class DirectMixin:
             "nav_chain": random.choices(nav_chains),
             "offline_threading_id": token,
         }
-        if content_type == "video":
-            data["video_result"] = ""
-            kwargs["to_direct"] = True
         if content_type == "photo":
             data["send_attribution"] = "inbox"
             data["allow_full_aspect_ratio"] = "true"
+        elif content_type == "video":
+            data["video_result"] = ""
+            kwargs["to_direct"] = True
         if user_ids:
             data["recipient_users"] = dumps([[int(uid) for uid in user_ids]])
         if thread_ids:
@@ -572,6 +564,7 @@ class DirectMixin:
             path, upload_id, **kwargs
         )[:3]
         data["upload_id"] = upload_id
+        method = f"configure_{content_type}"
         # data['content_type'] = content_type
         result = self.private_request(
             f"direct_v2/threads/broadcast/{method}/",
@@ -699,7 +692,7 @@ class DirectMixin:
             "max_ig_bus_results": "10",
             "mode": mode,
             "show_threads": "true",
-            "query": str(query),
+            "query": query,
             "max_ig_results": "10",
             "max_fb_results": "0",
         }
@@ -775,19 +768,16 @@ class DirectMixin:
             "direct_v2/threads/get_by_participants/",
             params={"recipient_users": recipient_users, "seq_id": 2580572, "limit": 20},
         )
-        users = []
-        for user in result.get("users", []):
-            # User dict object also contains fields like follower_count,
-            #     following_count, mutual_followers_count, media_count
-            users.append(
-                UserShort(
-                    pk=user["pk"],
-                    username=user["username"],
-                    full_name=user["full_name"],
-                    profile_pic_url=user["profile_pic_url"],
-                    is_private=user["is_private"],
-                )
+        users = [
+            UserShort(
+                pk=user["pk"],
+                username=user["username"],
+                full_name=user["full_name"],
+                profile_pic_url=user["profile_pic_url"],
+                is_private=user["is_private"],
             )
+            for user in result.get("users", [])
+        ]
         result["users"] = users
         return result
 

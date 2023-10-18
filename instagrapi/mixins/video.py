@@ -81,7 +81,7 @@ class DownloadVideoMixin:
             Path for the file downloaded
         """
         fname = urlparse(url).path.rsplit("/", 1)[1]
-        filename = "%s.%s" % (filename, fname.rsplit(".", 1)[1]) if filename else fname
+        filename = f'{filename}.{fname.rsplit(".", 1)[1]}' if filename else fname
         path = Path(folder) / filename
         response = requests.get(url, stream=True, timeout=self.request_timeout)
         response.raise_for_status()
@@ -523,13 +523,7 @@ class UploadVideoMixin:
             A dictionary of response from the call
         """
         timestamp = int(time.time())
-        mentions = mentions.copy()
-        locations = locations.copy()
-        links = links.copy()
-        hashtags = hashtags.copy()
         stickers = stickers.copy()
-        medias = medias.copy()
-        thread_ids = thread_ids.copy()
         story_sticker_ids = []
         data = {
             # USE extra_data TO EXTEND THE SETTINGS OF THE LOADED STORY,
@@ -628,8 +622,7 @@ class UploadVideoMixin:
         }
         data.update(extra_data)
         tap_models = []
-        static_models = []
-        if mentions:
+        if mentions := mentions.copy():
             reel_mentions = []
             text_metadata = []
             for mention in mentions:
@@ -663,7 +656,7 @@ class UploadVideoMixin:
             data["text_metadata"] = dumps(text_metadata)
             # data["reel_mentions"] = dumps(reel_mentions)
             tap_models.extend(reel_mentions)
-        if hashtags:
+        if hashtags := hashtags.copy():
             story_sticker_ids.append("hashtag_sticker")
             for mention in hashtags:
                 item = {
@@ -680,7 +673,7 @@ class UploadVideoMixin:
                     "tap_state_str_id": "hashtag_sticker_gradient",
                 }
                 tap_models.append(item)
-        if locations:
+        if locations := locations.copy():
             story_sticker_ids.append("location_sticker")
             for mention in locations:
                 mention.location = self.location_complete(mention.location)
@@ -698,7 +691,7 @@ class UploadVideoMixin:
                     "tap_state_str_id": "location_sticker_vibrant",
                 }
                 tap_models.append(item)
-        if links:
+        if links := links.copy():
             # instagram allow one link now
             link = links[0]
             self.private_request(
@@ -749,7 +742,7 @@ class UploadVideoMixin:
                 )
                 if sticker.type == "gif":
                     data["has_animated_sticker"] = "1"
-        if medias:
+        if medias := medias.copy():
             for feed_media in medias:
                 assert feed_media.media_pk, "Required StoryMedia.media_pk"
                 # if not feed_media.user_id:
@@ -772,7 +765,7 @@ class UploadVideoMixin:
                 }
                 tap_models.append(item)
             data["reshared_media_id"] = str(feed_media.media_pk)
-        if thread_ids:
+        if thread_ids := thread_ids.copy():
             # Send to direct thread
             token = self.generate_mutation_token()
             data.update(
@@ -796,7 +789,7 @@ class UploadVideoMixin:
             )
         if tap_models:
             data["tap_models"] = dumps(tap_models)
-        if static_models:
+        if static_models := []:
             data["static_models"] = dumps(static_models)
         if story_sticker_ids:
             data["story_sticker_ids"] = story_sticker_ids[0]
