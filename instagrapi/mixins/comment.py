@@ -198,7 +198,7 @@ class CommentMixin:
             A boolean value
         """
         assert self.user_id, "Login required"
-        comment_pk = int(comment_pk)
+        comment_pk = comment_pk
         data = {
             "is_carousel_bumped_post": "false",
             "container_module": "feed_contextual_self_profile",

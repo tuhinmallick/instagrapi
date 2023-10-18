@@ -512,6 +512,6 @@ class LocationMixin:
         List[Guide]
             List of objects of Guide
         """
-        location_pk = int(location_pk)
+        location_pk = location_pk
         result = self.private_request(f"guides/location/{location_pk}/")
         return [extract_guide_v1(item) for item in (result.get("guides") or [])]

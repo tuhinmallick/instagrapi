@@ -159,16 +159,14 @@ class AccountMixin:
             user_data = self.account_info().dict()
             user_data = {field: user_data[field] for field in fields}
             data = dict(user_data, **data)
-        full_name = data.pop("full_name", None)
-        if full_name:
+        if full_name := data.pop("full_name", None):
             # Instagram original field-name for full user name is "first_name"
             data["first_name"] = full_name
         # Biography with entities (markup)
         result = self.private_request(
             "accounts/edit_profile/", self.with_default_data(data)
         )
-        biography = data.get("biography")
-        if biography:
+        if biography := data.get("biography"):
             self.account_set_biography(biography)
         return extract_account(result["user"])
 

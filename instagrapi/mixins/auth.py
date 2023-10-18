@@ -81,15 +81,16 @@ class PreLoginFlowMixin:
         """
         data = {
             "android_device_id": self.android_device_id,
-            "client_contact_points": '[{"type":"omnistring","value":"%s","source":"last_login_attempt"}]'
-            % self.username,
+            "client_contact_points": (
+                '[{"type":"omnistring","value":"%s","source":"last_login_attempt"}]'
+                % self.username
+            ),
             "phone_id": self.phone_id,
             "usages": '["account_recovery_omnibox"]',
-            "logged_in_user_ids": "[]",  # "[\"123456789\",\"987654321\"]",
+            "logged_in_user_ids": "[]",
             "device_id": self.uuid,
+            "_csrftoken": self.token,
         }
-        # if login is False:
-        data["_csrftoken"] = self.token
         return self.private_request(
             "accounts/get_prefill_candidates/", data, login=login
         )
@@ -113,7 +114,7 @@ class PreLoginFlowMixin:
             "server_config_retrieval": "1",
             # "experiments": config.LOGIN_EXPERIMENTS,
         }
-        if login is False:
+        if not login:
             data["_uuid"] = self.uuid
             data["_uid"] = self.user_id
             data["_csrftoken"] = self.token
@@ -138,7 +139,7 @@ class PreLoginFlowMixin:
             "id": self.uuid,
             "server_config_retrieval": "1",
         }
-        if login is False:
+        if not login:
             data["_uid"] = self.user_id
             data["_uuid"] = self.uuid
             data["_csrftoken"] = self.token
@@ -180,10 +181,7 @@ class PostLoginFlowMixin:
         bool
             A boolean value
         """
-        check_flow = []
-        # chance = random.randint(1, 100) % 2 == 0
-        # reason = "pull_to_refresh" if chance else "cold_start"
-        check_flow.append(self.get_reels_tray_feed("cold_start"))
+        check_flow = [self.get_reels_tray_feed("cold_start")]
         check_flow.append(self.get_timeline_feed(["cold_start_fetch"]))
         return all(check_flow)
 
@@ -265,15 +263,12 @@ class PostLoginFlowMixin:
             "timezone_offset": str(self.timezone_offset),
             "tray_session_id": self.tray_session_id,
             "request_id": self.request_id,
-            # "latest_preloaded_reel_ids": "[]", # [{"reel_id":"6009504750","media_count":"15","timestamp":1628253494,"media_ids":"[\"2634301737009283814\",\"2634301789371018685\",\"2634301853921370532\",\"2634301920174570551\",\"2634301973895112725\",\"2634302037581608844\",\"2634302088273817272\",\"2634302822117736694\",\"2634303181452199341\",\"2634303245482345741\",\"2634303317473473894\",\"2634303382971517344\",\"2634303441062726263\",\"2634303502039423893\",\"2634303754729475501\"]"},{"reel_id":"4357392188","media_count":"4","timestamp":1628250613,"media_ids":"[\"2634142331579781054\",\"2634142839803515356\",\"2634150786575125861\",\"2634279566740346641\"]"},{"reel_id":"5931631205","media_count":"7","timestamp":1628253023,"media_ids":"[\"2633699694927154768\",\"2634153361241413763\",\"2634196788830183839\",\"2634219197377323622\",\"2634294221109889541\",\"2634299705648894876\",\"2634299760434939842\"]"}],
             "page_size": 50,
-            # "_csrftoken": self.token,
             "_uuid": self.uuid,
+            "reel_tray_impressions": {}
+            if reason == "cold_start"
+            else {self.user_id: str(time.time())},
         }
-        if reason == "cold_start":
-            data["reel_tray_impressions"] = {}
-        else:
-            data["reel_tray_impressions"] = {self.user_id: str(time.time())}
         return self.private_request("feed/reels_tray/", data)
 
 
@@ -541,9 +536,7 @@ class LoginMixin(PreLoginFlowMixin, PostLoginFlowMixin):
         user_id = self.cookie_dict.get("ds_user_id")
         if not user_id and self.authorization_data:
             user_id = self.authorization_data.get("ds_user_id")
-        if user_id:
-            return int(user_id)
-        return None
+        return int(user_id) if user_id else None
 
     @property
     def device(self) -> dict:
@@ -748,7 +741,7 @@ class LoginMixin(PreLoginFlowMixin, PostLoginFlowMixin):
         str
             A random android device id
         """
-        return "android-%s" % hashlib.sha256(str(time.time()).encode()).hexdigest()[:16]
+        return f"android-{hashlib.sha256(str(time.time()).encode()).hexdigest()[:16]}"
 
     def expose(self) -> Dict:
         """
@@ -865,9 +858,7 @@ class LoginMixin(PreLoginFlowMixin, PostLoginFlowMixin):
         """Parse authorization header"""
         try:
             b64part = authorization.rsplit(":", 1)[-1]
-            if not b64part:
-                return {}
-            return json.loads(base64.b64decode(b64part))
+            return {} if not b64part else json.loads(base64.b64decode(b64part))
         except Exception as e:
             self.logger.exception(e)
         return {}

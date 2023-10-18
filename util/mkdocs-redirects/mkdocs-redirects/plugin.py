@@ -60,7 +60,7 @@ def get_relative_html_path(old_page, new_page, use_directory_urls):
     relative_path = os.path.relpath(new_path, start=os.path.dirname(old_path))
 
     if use_directory_urls:
-        relative_path = relative_path + "/"
+        relative_path = f"{relative_path}/"
 
     return relative_path
 
@@ -70,23 +70,17 @@ def get_html_path(path, use_directory_urls):
     parent, filename = os.path.split(path)
     name_orig, ext = os.path.splitext(filename)
 
-    # Directory URLs require some different logic. This mirrors mkdocs' internal logic.
-    if use_directory_urls:
-
-        # Both `index.md` and `README.md` files are normalized to `index.html` during build
-        name = "index" if name_orig.lower() in ("index", "readme") else name_orig
+    if not use_directory_urls:
+        return os.path.join(parent, f"{name_orig}.html")
+    # Both `index.md` and `README.md` files are normalized to `index.html` during build
+    name = "index" if name_orig.lower() in ("index", "readme") else name_orig
 
         # If it's name is `index`, then that means it's the "homepage" of a directory, so should get placed in that dir
-        if name == "index":
-            return os.path.join(parent, "index.html")
-
-        # Otherwise, it's a file within that folder, so it should go in its own directory to resolve properly
-        else:
-            return os.path.join(parent, name, "index.html")
-
-    # Just use the original name if Directory URLs aren't used
-    else:
-        return os.path.join(parent, (name_orig + ".html"))
+    return (
+        os.path.join(parent, "index.html")
+        if name == "index"
+        else os.path.join(parent, name, "index.html")
+    )
 
 
 class RedirectPlugin(BasePlugin):

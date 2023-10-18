@@ -16,10 +16,7 @@ class NoteMixin:
         result = self.private_request("notes/get_notes/")
         assert result.get("status", "") == "ok", "Failed to retrieve Notes in Direct"
 
-        notes = []
-        for item in result.get("items", []):
-            notes.append(Note(**item))
-        return notes
+        return [Note(**item) for item in result.get("items", [])]
 
     def last_seen_update_note(self) -> bool:
         """
@@ -73,10 +70,10 @@ class NoteMixin:
 
         """
         assert self.user_id, "Login required"
-        assert audience in (
+        assert audience in {
             0,
             1,
-        ), f"Invalid audience parameter={audience} (must be 0 or 1)"
+        }, f"Invalid audience parameter={audience} (must be 0 or 1)"
 
         data = {"note_style": 0, "text": text, "_uuid": self.uuid, "audience": audience}
         result = self.private_request("notes/create_note", data=data)

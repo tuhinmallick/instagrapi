@@ -34,7 +34,7 @@ class TrackMixin:
         """
         fname = urlparse(url).path.rsplit("/", 1)[1].strip()
         assert fname, """The URL must contain the path to the file (m4a or mp3)."""
-        filename = "%s.%s" % (filename, fname.rsplit(".", 1)[1]) if filename else fname
+        filename = f'{filename}.{fname.rsplit(".", 1)[1]}' if filename else fname
         path = Path(folder) / filename
         response = requests.get(url, stream=True, timeout=self.request_timeout)
         response.raise_for_status()
@@ -75,7 +75,7 @@ class TrackMixin:
             "tab_type": "clips",
             "referrer_media_id": "",
             "_uuid": self.uuid,
-            "music_canonical_id": str(music_canonical_id),
+            "music_canonical_id": music_canonical_id,
         }
         result = self.private_request("clips/music/", data)
         track = json_value(result, "metadata", "music_info", "music_asset_info")

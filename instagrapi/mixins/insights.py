@@ -170,10 +170,12 @@ class InsightsMixin:
             "ads/graphql/",
             self.with_query_params(data, query_params),
         )
-        res = json_value(result, "data", "shadow_instagram_user", "business_manager")
-        if not res:
+        if res := json_value(
+            result, "data", "shadow_instagram_user", "business_manager"
+        ):
+            return res
+        else:
             raise UserError("Account is not business account", **self.last_json)
-        return res
 
     def insights_media(self, media_pk: int) -> Dict:
         """

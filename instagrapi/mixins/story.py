@@ -202,11 +202,9 @@ class StoryMixin:
             )
             or {}
         )
-        stories = []
-        for item in reel.get("items", []):
-            stories.append(extract_story_v1(item))
+        stories = [extract_story_v1(item) for item in reel.get("items", [])]
         if amount:
-            stories = stories[: int(amount)]
+            stories = stories[:amount]
         return stories
 
     def user_stories(self, user_id: str, amount: int = None) -> List[Story]:
@@ -267,7 +265,7 @@ class StoryMixin:
         Path
             Path for the file downloaded
         """
-        story_pk = int(story_pk)
+        story_pk = story_pk
         story = self.story_info(story_pk)
         url = story.thumbnail_url if story.media_type == 1 else story.video_url
         return self.story_download_by_url(url, filename, folder)
@@ -298,7 +296,7 @@ class StoryMixin:
             """The URL must contain the path to the file (mp4 or jpg).\n"""
             """Read the documentation https://subzeroid.github.io/instagrapi/usage-guide/story.html"""
         )
-        filename = "%s.%s" % (filename, fname.rsplit(".", 1)[1]) if filename else fname
+        filename = f'{filename}.{fname.rsplit(".", 1)[1]}' if filename else fname
         path = Path(folder) / filename
         response = requests.get(url, stream=True, timeout=self.request_timeout)
         response.raise_for_status()
@@ -335,8 +333,7 @@ class StoryMixin:
                 result = self.private_request(
                     f"media/{story_pk}/list_reel_media_viewer/", params=params
                 )
-                for item in result["users"]:
-                    users.append(extract_user_short(item))
+                users.extend(extract_user_short(item) for item in result["users"])
                 if amount and len(users) >= amount:
                     break
                 next_max_id = result.get("next_max_id")
@@ -346,7 +343,7 @@ class StoryMixin:
                 self.logger.exception(e)
                 break
         if amount:
-            users = users[: int(amount)]
+            users = users[:amount]
         return users
 
     def story_like(self, story_id: str, revert: bool = False) -> bool:
